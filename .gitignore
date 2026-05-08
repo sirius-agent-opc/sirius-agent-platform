@@ -1,1 +1,10 @@
-node_modules/\n.env\n*.log\ndist/\n.tmp/
+node_modules/
+.env
+.env.*
+*.log
+dist/
+.tmp/
+__pycache__/
+*.pyc
+.DS_Store
+docker-data/
