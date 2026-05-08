@@ -97,6 +97,25 @@ def contact(req: ContactRequest):
     print(f"📩 新客户需求: {req.name} / {req.contact}")
     return {"status": "received", "message": "需求已收到，24小时内回复"}
 
+# ─── 手动查邮件 ────────────────────────────────────
+
+import subprocess
+
+@app.get("/check-email")
+def check_email():
+    """手动触发邮件检查"""
+    script = os.path.join(os.path.dirname(__file__), "..", "..", "ops", "email-monitor.py")
+    if os.path.exists(script):
+        try:
+            result = subprocess.run(
+                ["python3", script],
+                capture_output=True, text=True, timeout=20
+            )
+            return {"status": "done", "output": result.stdout.strip() or result.stderr.strip()}
+        except subprocess.TimeoutExpired:
+            return {"status": "timeout", "message": "邮件检查超时，稍后重试"}
+    return {"status": "error", "message": "脚本不存在"}
+
 # ─── 在线体验页面 ───────────────────────────────────
 
 @app.get("/demo", response_class=HTMLResponse)
