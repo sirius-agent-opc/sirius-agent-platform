@@ -1,0 +1,1 @@
+# Project Structure\n\n```\nagents/        - Agent 实现代码\nplatform/      - 平台/框架代码\ninfra/         - Docker/部署/CI\nclients/       - 客户项目\ndocs/          - 文档\nscripts/       - 工具脚本\ntemplates/    - Agent 模板\n```
