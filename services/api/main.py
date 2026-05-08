@@ -1,19 +1,120 @@
 """
-FastAPI 服务入口
+Sirius Agent Platform API
 """
-from fastapi import FastAPI
+import os
+from typing import Optional
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-app = FastAPI(title="Sirius Agent Platform API")
+app = FastAPI(title="Sirius Agent Platform API", version="0.1.0")
 
-class AgentRequest(BaseModel):
-    agent_type: str
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ─── Models ────────────────────────────────────────────
+
+class ChatRequest(BaseModel):
+    messages: list[dict]
+    system_prompt: Optional[str] = "You are a helpful assistant."
+    model: Optional[str] = "gpt-4o-mini"
+
+class ChatResponse(BaseModel):
+    reply: str
+    model: str
+
+class AgentRunRequest(BaseModel):
+    agent_type: str  # "chat" | "rag" | "workflow"
     input: dict
+    config: Optional[dict] = {}
+
+class AgentRunResponse(BaseModel):
+    status: str
+    output: dict
+
+# ─── LLM Client ────────────────────────────────────────
+
+def get_llm():
+    """Get LLM client (OpenAI or mock for demo)"""
+    api_key = os.getenv("OPENAI_API_KEY")
+    if api_key:
+        from openai import OpenAI
+        return OpenAI(api_key=api_key)
+    return None
+
+# ─── Endpoints ─────────────────────────────────────────
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    return {"status": "ok", "api_version": "0.1.0", "llm_configured": bool(os.getenv("OPENAI_API_KEY"))}
 
-@app.post("/agents/run")
-async def run_agent(req: AgentRequest):
-    return {"status": "running", "agent": req.agent_type}
+@app.post("/chat", response_model=ChatResponse)
+def chat(req: ChatRequest):
+    """通用对话接口"""
+    client = get_llm()
+    
+    if client:
+        messages = [{"role": "system", "content": req.system_prompt}]
+        messages.extend(req.messages)
+        resp = client.chat.completions.create(
+            model=req.model,
+            messages=messages,
+            temperature=0.7,
+        )
+        return ChatResponse(reply=resp.choices[0].message.content, model=req.model)
+    
+    # Mock 响应（演示用）
+    return ChatResponse(
+        reply=f"[演示模式] 收到 {len(req.messages)} 条消息。配置 OPENAI_API_KEY 环境变量即可接入真实 LLM。",
+        model="mock",
+    )
+
+@app.post("/agents/run", response_model=AgentRunResponse)
+def run_agent(req: AgentRunRequest):
+    """运行指定类型的 Agent"""
+    if req.agent_type == "chat":
+        return AgentRunResponse(
+            status="success",
+            output={
+                "agent": "chat",
+                "response": "Chat agent 响应 (Demo)",
+                "data": req.input,
+            },
+        )
+    elif req.agent_type == "rag":
+        return AgentRunResponse(
+            status="success",
+            output={
+                "agent": "rag",
+                "query": req.input.get("query", ""),
+                "answer": f"RAG 检索结果 (Demo): 基于知识库的答案",
+                "sources": [],
+            },
+        )
+    elif req.agent_type == "workflow":
+        return AgentRunResponse(
+            status="success",
+            output={
+                "agent": "workflow",
+                "steps_completed": len(req.config.get("steps", [])),
+                "results": [{"step": s, "status": "done"} for s in req.config.get("steps", [])],
+            },
+        )
+    else:
+        raise HTTPException(status_code=400, detail=f"未知 Agent 类型: {req.agent_type}")
+
+@app.get("/agents")
+def list_agents():
+    """列出可用 Agent 模板"""
+    return {
+        "agents": [
+            {"id": "chat", "name": "Chat Agent", "description": "通用对话 Agent"},
+            {"id": "rag", "name": "RAG Agent", "description": "知识库问答 Agent"},
+            {"id": "workflow", "name": "Workflow Agent", "description": "工作流自动化 Agent"},
+        ],
+        "llm_configured": bool(os.getenv("OPENAI_API_KEY")),
+    }
