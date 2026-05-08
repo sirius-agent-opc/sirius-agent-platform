@@ -127,32 +127,25 @@
         document.getElementById('form-section').scrollIntoView({ behavior: 'smooth' });
     }
 
-    document.getElementById('contactForm').addEventListener('submit', async function(e) {
+    document.getElementById('contactForm').addEventListener('submit', function(e) {
         e.preventDefault();
         const data = {
             name: document.getElementById('name').value,
             contact: document.getElementById('contact').value,
             desc: document.getElementById('desc').value,
             budget: document.getElementById('budget').value,
-            time: new Date().toISOString()
         };
-        // 提交到 API
-        try {
-            const resp = await fetch('http://192.168.0.151:8000/contact', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(data)
-            });
-            if (resp.ok) {
-                document.getElementById('contactForm').style.display = 'none';
-                document.getElementById('formSuccess').style.display = 'block';
-            }
-        } catch(e) {
-            // 降级：发送邮件
-            window.location.href = 'mailto:sirius.nrly@gmail.com?subject=' + 
-                encodeURIComponent('[需求] ' + data.name) + 
-                '&body=' + encodeURIComponent('联系方式: ' + data.contact + '\n\n需求: ' + data.desc + '\n\n预算: ' + data.budget);
-        }
+        // 发邮件（目前最可靠的方案）
+        const subject = '[需求] ' + data.name;
+        const body = '联系方式: ' + data.contact +
+            '\n\n需求描述:\n' + data.desc +
+            '\n\n预算: ' + data.budget +
+            '\n\n---\n来自 sirius-agent-platform 官网';
+        window.location.href = 'mailto:sirius.nrly@gmail.com?subject=' +
+            encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+        document.getElementById('contactForm').style.display = 'none';
+        document.getElementById('formSuccess').style.display = 'block';
+        document.getElementById('formSuccess').innerHTML = '✅ 邮件客户端已打开。<br>点击发送后，我会尽快回复你。';
     });
     </script>
 </body>
