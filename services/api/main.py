@@ -46,12 +46,13 @@ class AgentRunResponse(BaseModel):
 # ─── LLM Client ────────────────────────────────────────
 
 def get_llm():
-    """Get LLM client (OpenAI or mock for demo)"""
+    """Get LLM client (OpenAI / DeepSeek compatible)"""
     api_key = os.getenv("OPENAI_API_KEY")
-    if api_key:
-        from openai import OpenAI
-        return OpenAI(api_key=api_key)
-    return None
+    if not api_key:
+        return None
+    base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+    from openai import OpenAI
+    return OpenAI(api_key=api_key, base_url=base_url)
 
 # ─── 客户咨询 ──────────────────────────────────────
 
@@ -63,10 +64,15 @@ def contact(req: ContactRequest):
     entry = req.model_dump()
     entry["received_at"] = datetime.datetime.now().isoformat()
     
-    # 写入文件（可后续替换为数据库/飞书通知）
+    # 写入文件
     os.makedirs("data/contacts", exist_ok=True)
     with open(f"data/contacts/{datetime.date.today()}.jsonl", "a") as f:
         f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    
+    # 标记新需求（供 OpenClaw 检测）
+    os.makedirs("data/notifications", exist_ok=True)
+    with open(f"data/notifications/new_contact.json", "w") as f:
+        f.write(json.dumps(entry, ensure_ascii=False))
     
     print(f"📩 新客户需求: {req.name} / {req.contact}")
     return {"status": "received", "message": "需求已收到，24小时内回复"}
