@@ -32,6 +32,13 @@ class AgentRunRequest(BaseModel):
     input: dict
     config: Optional[dict] = {}
 
+class ContactRequest(BaseModel):
+    name: str
+    contact: str
+    desc: str
+    budget: str = "未定"
+    time: Optional[str] = None
+
 class AgentRunResponse(BaseModel):
     status: str
     output: dict
@@ -45,6 +52,24 @@ def get_llm():
         from openai import OpenAI
         return OpenAI(api_key=api_key)
     return None
+
+# ─── 客户咨询 ──────────────────────────────────────
+
+@app.post("/contact")
+def contact(req: ContactRequest):
+    """客户需求提交"""
+    # 记录到日志
+    import json, datetime
+    entry = req.model_dump()
+    entry["received_at"] = datetime.datetime.now().isoformat()
+    
+    # 写入文件（可后续替换为数据库/飞书通知）
+    os.makedirs("data/contacts", exist_ok=True)
+    with open(f"data/contacts/{datetime.date.today()}.jsonl", "a") as f:
+        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    
+    print(f"📩 新客户需求: {req.name} / {req.contact}")
+    return {"status": "received", "message": "需求已收到，24小时内回复"}
 
 # ─── Endpoints ─────────────────────────────────────────
 
