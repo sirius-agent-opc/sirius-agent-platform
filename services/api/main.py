@@ -54,6 +54,24 @@ def get_llm():
     from openai import OpenAI
     return OpenAI(api_key=api_key, base_url=base_url)
 
+# ─── Agent 模板加载 ────────────────────────────────
+
+def load_template(template_id: str):
+    """动态加载 Agent 模板"""
+    import importlib, json
+    templates_path = os.path.join(os.path.dirname(__file__), "..", "..", "agents", "templates.json")
+    if os.path.exists(templates_path):
+        with open(templates_path) as f:
+            index = json.load(f)
+        for t in index.get("templates", []):
+            if t["id"] == template_id:
+                module_path = f"agents.{t['path'].replace('/', '.')}.{t['entry'].replace('.py', '')}"
+                mod = importlib.import_module(module_path)
+                cls = getattr(mod, t["class"])
+                config_path = os.path.join(os.path.dirname(__file__), "..", "..", "agents", t["path"], t["config"])
+                return cls(config_path)
+    return None
+
 # ─── 客户咨询 ──────────────────────────────────────
 
 @app.post("/contact")
@@ -106,46 +124,24 @@ def chat(req: ChatRequest):
 
 @app.post("/agents/run", response_model=AgentRunResponse)
 def run_agent(req: AgentRunRequest):
-    """运行指定类型的 Agent"""
-    if req.agent_type == "chat":
-        return AgentRunResponse(
-            status="success",
-            output={
-                "agent": "chat",
-                "response": "Chat agent 响应 (Demo)",
-                "data": req.input,
-            },
-        )
-    elif req.agent_type == "rag":
-        return AgentRunResponse(
-            status="success",
-            output={
-                "agent": "rag",
-                "query": req.input.get("query", ""),
-                "answer": f"RAG 检索结果 (Demo): 基于知识库的答案",
-                "sources": [],
-            },
-        )
-    elif req.agent_type == "workflow":
-        return AgentRunResponse(
-            status="success",
-            output={
-                "agent": "workflow",
-                "steps_completed": len(req.config.get("steps", [])),
-                "results": [{"step": s, "status": "done"} for s in req.config.get("steps", [])],
-            },
-        )
-    else:
+    """运行指定类型的 Agent（使用模板）"""
+    agent = load_template(req.agent_type)
+    if not agent:
         raise HTTPException(status_code=400, detail=f"未知 Agent 类型: {req.agent_type}")
+    
+    try:
+        result = agent.run(req.input)
+        return AgentRunResponse(status="success", output=result)
+    except Exception as e:
+        return AgentRunResponse(status="error", output={"error": str(e)})
 
 @app.get("/agents")
 def list_agents():
     """列出可用 Agent 模板"""
-    return {
-        "agents": [
-            {"id": "chat", "name": "Chat Agent", "description": "通用对话 Agent"},
-            {"id": "rag", "name": "RAG Agent", "description": "知识库问答 Agent"},
-            {"id": "workflow", "name": "Workflow Agent", "description": "工作流自动化 Agent"},
-        ],
-        "llm_configured": bool(os.getenv("OPENAI_API_KEY")),
-    }
+    import json
+    templates_path = os.path.join(os.path.dirname(__file__), "..", "..", "agents", "templates.json")
+    if os.path.exists(templates_path):
+        with open(templates_path) as f:
+            index = json.load(f)
+        return {"templates": index["templates"], "llm_configured": bool(os.getenv("OPENAI_API_KEY"))}
+    return {"templates": [], "llm_configured": bool(os.getenv("OPENAI_API_KEY"))}

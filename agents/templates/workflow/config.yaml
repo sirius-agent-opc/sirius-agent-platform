@@ -1,0 +1,18 @@
+name: "workflow"
+description: "工作流 Agent"
+version: "1.0.0"
+
+model:
+  provider: "openai"
+  model: "deepseek-chat"
+
+steps:
+  - id: "analyze"
+    name: "分析输入"
+    prompt: "分析以下输入，提取关键信息：{input}"
+  - id: "process"
+    name: "处理数据"
+    prompt: "基于以下分析结果执行处理：{analyze.output}"
+  - id: "output"
+    name: "生成输出"
+    prompt: "生成最终输出：{process.output}"

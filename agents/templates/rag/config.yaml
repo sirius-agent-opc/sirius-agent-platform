@@ -1,0 +1,18 @@
+name: "rag"
+description: "知识库问答 Agent"
+version: "1.0.0"
+
+model:
+  provider: "openai"
+  model: "deepseek-chat"
+  temperature: 0.3
+
+retrieval:
+  top_k: 3
+  chunk_size: 500
+  chunk_overlap: 50
+  embedding_model: "text-embedding-ada-002"
+
+knowledge_base:
+  path: "data/knowledge"
+  type: "files"  # files | api

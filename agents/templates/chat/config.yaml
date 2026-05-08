@@ -1,0 +1,15 @@
+name: "chat"
+description: "通用对话 Agent"
+version: "1.0.0"
+
+model:
+  provider: "openai"   # openai | deepseek | custom
+  model: "deepseek-chat"
+  temperature: 0.7
+  max_tokens: 2048
+
+system_prompt: "你是一个有用的 AI 助手。"
+
+conversation:
+  max_history: 20
+  context_window: 4096

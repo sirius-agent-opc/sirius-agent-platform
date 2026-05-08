@@ -1,0 +1,32 @@
+{
+    "version": "1.0",
+    "templates": [
+        {
+            "id": "chat",
+            "name": "Chat Agent",
+            "description": "通用对话 Agent，支持多轮对话和系统提示词",
+            "path": "templates/chat",
+            "entry": "agent.py",
+            "class": "ChatAgent",
+            "config": "config.yaml"
+        },
+        {
+            "id": "rag",
+            "name": "RAG Agent",
+            "description": "知识库问答 Agent，支持文档检索增强生成",
+            "path": "templates/rag",
+            "entry": "agent.py",
+            "class": "RAGAgent",
+            "config": "config.yaml"
+        },
+        {
+            "id": "workflow",
+            "name": "Workflow Agent",
+            "description": "工作流 Agent，支持多步骤链式处理",
+            "path": "templates/workflow",
+            "entry": "agent.py",
+            "class": "WorkflowAgent",
+            "config": "config.yaml"
+        }
+    ]
+}
