@@ -1,0 +1,20 @@
+[project]
+name = "sirius-agent-platform"
+version = "0.1.0"
+description = "AI Agent 开发平台"
+requires-python = ">=3.11"
+dependencies = [
+    "openai>=1.0.0",
+    "langchain>=0.3.0",
+    "langchain-openai>=0.2.0",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.30.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+    "ruff>=0.6.0",
+]
