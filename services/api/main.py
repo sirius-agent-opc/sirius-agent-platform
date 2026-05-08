@@ -7,6 +7,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from fastapi.responses import HTMLResponse, FileResponse
+
 app = FastAPI(title="Sirius Agent Platform API", version="0.1.0")
 
 app.add_middleware(
@@ -94,6 +96,17 @@ def contact(req: ContactRequest):
     
     print(f"📩 新客户需求: {req.name} / {req.contact}")
     return {"status": "received", "message": "需求已收到，24小时内回复"}
+
+# ─── 在线体验页面 ───────────────────────────────────
+
+@app.get("/demo", response_class=HTMLResponse)
+def demo_page():
+    """Agent 在线体验页面"""
+    html_path = os.path.join(os.path.dirname(__file__), "..", "web", "chat.html")
+    if os.path.exists(html_path):
+        with open(html_path, encoding="utf-8") as f:
+            return f.read()
+    return HTMLResponse("<h1>Demo page not found</h1>", status_code=404)
 
 # ─── Endpoints ─────────────────────────────────────────
 
